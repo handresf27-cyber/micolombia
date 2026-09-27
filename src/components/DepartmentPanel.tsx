@@ -23,7 +23,7 @@ export function DepartmentPanel({ department, experience, onStatusChange, onClos
   return (
     <aside className="detail-panel">
       <div className="panel-topline"><span className="eyebrow">DIARIO DE VIAJE</span><button className="icon-button mobile-close" aria-label="Cerrar detalle" onClick={onClose}>×</button></div>
-      <div className={`department-emblem status-${status}`}><span>{department.name.slice(0, 1)}</span><i>✳</i></div>
+      <div className={`department-emblem status-${status}`}><img src={`${import.meta.env.BASE_URL}flags/${department.flagCode}.svg`} alt={`Bandera de ${department.name}`} /><i>✳</i></div>
       <div className="department-heading">
         <p className="eyebrow">DEPARTAMENTO · COLOMBIA</p>
         <h2>{department.name}</h2>
@@ -32,9 +32,9 @@ export function DepartmentPanel({ department, experience, onStatusChange, onClos
       <div className="panel-divider" />
       <p className="field-label">¿Cómo ha sido tu recorrido?</p>
       <div className="status-options" role="group" aria-label="Estado del departamento">
-        {(['pending', 'visited', 'explored'] as DepartmentStatus[]).map((option) => (
+        {(['pending', 'visited'] as DepartmentStatus[]).map((option) => (
           <button key={option} onClick={() => onStatusChange(department.id, option)} className={`status-option ${status === option ? 'active' : ''} option-${option}`} aria-pressed={status === option}>
-            <span className="option-mark">{option === 'pending' ? '○' : option === 'visited' ? '◒' : '✳'}</span>
+            <span className="option-mark">{option === 'pending' ? '○' : '⚑'}</span>
             <span>{STATUS_LABELS[option]}</span>
             {status === option && <span className="option-check">✓</span>}
           </button>
