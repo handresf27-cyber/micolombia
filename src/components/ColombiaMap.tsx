@@ -31,7 +31,8 @@ export function ColombiaMap({ experiences, selectedId, onSelect }: Props) {
         const mainland = data.features.filter((feature) => feature.properties.dpto_ccdgo !== SAN_ANDRES_ID)
         const archipelago = data.features.find((feature) => feature.properties.dpto_ccdgo === SAN_ANDRES_ID)
         const collection: FeatureCollection<Geometry, DepartmentProperties> = { type: 'FeatureCollection', features: mainland }
-        const projection = geoMercator().fitExtent([[172, 26], [WIDTH - 24, HEIGHT - 24]], collection)
+        // Keep a dedicated left column for the archipelago inset.
+        const projection = geoMercator().fitExtent([[205, 26], [WIDTH - 24, HEIGHT - 24]], collection)
         const makePath = geoPath(projection)
         setFeatures(mainland.flatMap((feature) => {
           const department = departmentById[feature.properties.dpto_ccdgo]
@@ -39,7 +40,8 @@ export function ColombiaMap({ experiences, selectedId, onSelect }: Props) {
         }))
 
         if (archipelago) {
-          const islandProjection = geoMercator().fitExtent([[31, 59], [153, 131]], archipelago)
+          // Enlarge the remote islands so they remain legible at the same scale as the mainland.
+          const islandProjection = geoMercator().fitExtent([[30, 68], [184, 238]], archipelago)
           const department = departmentById[SAN_ANDRES_ID]
           setSanAndres({ ...department, path: geoPath(islandProjection)(archipelago) ?? '' })
         }
@@ -83,8 +85,9 @@ export function ColombiaMap({ experiences, selectedId, onSelect }: Props) {
           )
         })}
         {sanAndres && <g className="island-inset">
-          <rect className="island-inset-frame" x="14" y="16" width="162" height="145" rx="9" />
+          <rect className="island-inset-frame" x="14" y="16" width="190" height="250" rx="9" />
           <text className="island-inset-label" x="26" y="38">SAN ANDRÉS · PROVIDENCIA</text>
+          <text className="island-inset-note" x="26" y="53">AMPLIADO · NO A ESCALA</text>
           <path
             d={sanAndres.path}
             fill={experiences[SAN_ANDRES_ID]?.status === 'visited' ? `url(#flag-${sanAndres.flagCode})` : undefined}
