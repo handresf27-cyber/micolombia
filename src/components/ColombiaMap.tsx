@@ -12,9 +12,10 @@ type Props = {
 
 const WIDTH = 760
 const HEIGHT = 650
+const ISLAND_SCALE = 3.5
 const departmentById = Object.fromEntries(departments.map((department) => [department.id, department]))
 const SAN_ANDRES_ID = '88'
-type DrawnDepartment = { id: string; name: string; flagCode: string; path: string }
+type DrawnDepartment = { id: string; name: string; flagCode: string; path: string; islandParts?: { path: string; transform: string }[] }
 
 export function ColombiaMap({ experiences, selectedId, onSelect }: Props) {
   const [features, setFeatures] = useState<DrawnDepartment[]>([])
@@ -40,10 +41,23 @@ export function ColombiaMap({ experiences, selectedId, onSelect }: Props) {
         }))
 
         if (archipelago) {
-          // Enlarge the remote islands so they remain legible at the same scale as the mainland.
-          const islandProjection = geoMercator().fitExtent([[30, 68], [184, 238]], archipelago)
+          // The inset is a visual aid: enlarge each island polygon independently, without moving its center.
+          const islandProjection = geoMercator().fitExtent([[36, 88], [178, 224]], archipelago)
+          const islandPath = geoPath(islandProjection)
+          const geometries = archipelago.geometry.type === 'MultiPolygon'
+            ? archipelago.geometry.coordinates.map((coordinates) => ({ type: 'Polygon' as const, coordinates }))
+            : [archipelago.geometry]
+          const islandParts = geometries.map((geometry) => {
+            const [[x0, y0], [x1, y1]] = islandPath.bounds(geometry)
+            const centerX = (x0 + x1) / 2
+            const centerY = (y0 + y1) / 2
+            return {
+              path: islandPath(geometry) ?? '',
+              transform: `translate(${centerX * (1 - ISLAND_SCALE)} ${centerY * (1 - ISLAND_SCALE)}) scale(${ISLAND_SCALE})`,
+            }
+          })
           const department = departmentById[SAN_ANDRES_ID]
-          setSanAndres({ ...department, path: geoPath(islandProjection)(archipelago) ?? '' })
+          setSanAndres({ ...department, path: '', islandParts })
         }
       })
       .catch(() => setError(true))
@@ -88,10 +102,9 @@ export function ColombiaMap({ experiences, selectedId, onSelect }: Props) {
           <rect className="island-inset-frame" x="14" y="16" width="190" height="250" rx="9" />
           <text className="island-inset-label" x="26" y="38">SAN ANDRÉS · PROVIDENCIA</text>
           <text className="island-inset-note" x="26" y="53">AMPLIADO · NO A ESCALA</text>
-          <path
-            d={sanAndres.path}
-            fill={experiences[SAN_ANDRES_ID]?.status === 'visited' ? `url(#flag-${sanAndres.flagCode})` : undefined}
+          <g
             className={`department-shape status-${experiences[SAN_ANDRES_ID]?.status ?? 'pending'}${selectedId === SAN_ANDRES_ID ? ' is-selected' : ''}`}
+            fill={experiences[SAN_ANDRES_ID]?.status === 'visited' ? `url(#flag-${sanAndres.flagCode})` : undefined}
             onClick={() => onSelect(SAN_ANDRES_ID)}
             tabIndex={0}
             role="button"
@@ -99,7 +112,8 @@ export function ColombiaMap({ experiences, selectedId, onSelect }: Props) {
             onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') onSelect(SAN_ANDRES_ID) }}
           >
             <title>Archipiélago de San Andrés, Providencia y Santa Catalina</title>
-          </path>
+            {sanAndres.islandParts?.map((part, index) => <path key={index} d={part.path} transform={part.transform} />)}
+          </g>
         </g>}
       </svg>
     </div>
